@@ -7,6 +7,19 @@ La aplicacion esta escrita en Python y usa:
 - `customtkinter` para la interfaz.
 - `pyserial` para comunicacion serie no bloqueante.
 
+## Indice
+
+- [Estado actual del sistema](#estado-actual-del-sistema)
+- [Funcionalidades de la interfaz](#funcionalidades-de-la-interfaz)
+- [Protocolo serial (compatible con tu firmware)](#protocolo-serial-compatible-con-tu-firmware)
+- [Estructura del proyecto](#estructura-del-proyecto)
+- [Descargar la aplicacion](#descargar-la-aplicacion)
+- [Requisitos previos](#requisitos-previos)
+- [Instalacion y ejecucion](#instalacion-y-ejecucion)
+- [Configuracion (`scada_config.ini`)](#configuracion-scada_configini)
+- [Uso rapido](#uso-rapido)
+- [Solucion de problemas](#solucion-de-problemas)
+
 ## Estado actual del sistema
 
 - UART configurada por defecto a **115200 baudios**.
@@ -64,6 +77,8 @@ Notas:
 - `scada_config.ini`: configuracion editable.
 - `requirements.txt`: dependencias Python.
 - `setup_and_run_windows.bat`: instalacion + ejecucion automatica en Windows.
+- `setup_and_run_linux.sh`: instalacion + ejecucion automatica en Linux.
+- `setup_and_run_mac.sh`: instalacion + ejecucion automatica en macOS.
 
 ## Descargar la aplicacion
 
@@ -74,6 +89,7 @@ Puedes hacerlo de dos formas.
 1. Abre el repositorio en GitHub.
 2. Pulsa `Code` -> `Download ZIP`.
 3. Extrae el ZIP en una carpeta local, por ejemplo `C:\SCADA` o `~/SCADA`.
+4. Abre una terminal dentro de esa carpeta.
 
 ### Opcion 2: Clonar con Git
 
@@ -107,6 +123,24 @@ Ese script realiza automaticamente:
 5. Instala dependencias.
 6. Inicia `main.py`.
 
+### Linux (automatico)
+
+En la carpeta del proyecto, ejecuta:
+
+```bash
+chmod +x setup_and_run_linux.sh
+./setup_and_run_linux.sh
+```
+
+### macOS (automatico)
+
+En la carpeta del proyecto, ejecuta:
+
+```bash
+chmod +x setup_and_run_mac.sh
+./setup_and_run_mac.sh
+```
+
 ### Windows (manual)
 
 ```bat
@@ -118,6 +152,16 @@ python main.py
 ```
 
 ### Linux
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python main.py
+```
+
+### macOS (manual)
 
 ```bash
 python3 -m venv .venv
