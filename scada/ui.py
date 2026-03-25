@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import configparser
 import datetime as dt
 import tkinter as tk
 from tkinter import messagebox
+from pathlib import Path
 
 import customtkinter as ctk
 from serial import SerialException
@@ -13,6 +15,13 @@ from scada.serial_worker import SerialWorker
 class ScadaApp(ctk.CTk):
     def __init__(self) -> None:
         super().__init__()
+
+        self.config_path = Path(__file__).resolve().parent.parent / "scada_config.ini"
+        self.app_config = self._load_config()
+        self.serial_baudrate = self.app_config.getint("serial", "baudrate", fallback=115200)
+        self.serial_timeout = self.app_config.getfloat("serial", "timeout", fallback=0.2)
+        self.max_speed_d10 = self.app_config.getint("protocol", "max_speed_d10", fallback=100)
+        self.max_speed = self.max_speed_d10 / 10.0
 
         self.title("SCADA Cinta Transportadora")
         self.geometry("1040x700")
@@ -42,9 +51,8 @@ class ScadaApp(ctk.CTk):
             "surface_dark": "#0f172a",
         }
 
-        self.serial_worker = SerialWorker(baudrate=9600)
+        self.serial_worker = SerialWorker(baudrate=self.serial_baudrate, timeout=self.serial_timeout)
         self.current_speed = 0.0
-        self.max_speed = 100.0
         self.last_sensor_state: bool | None = None
 
         self._build_layout()
@@ -52,6 +60,22 @@ class ScadaApp(ctk.CTk):
 
         self.after(120, self._poll_messages)
         self.protocol("WM_DELETE_WINDOW", self._on_close)
+
+    def _load_config(self) -> configparser.ConfigParser:
+        config = configparser.ConfigParser()
+        config.read_dict(
+            {
+                "serial": {
+                    "baudrate": "115200",
+                    "timeout": "0.2",
+                },
+                "protocol": {
+                    "max_speed_d10": "100",
+                },
+            }
+        )
+        config.read(self.config_path, encoding="utf-8")
+        return config
 
     def _build_layout(self) -> None:
         self.grid_columnconfigure(0, weight=1)
@@ -162,7 +186,7 @@ class ScadaApp(ctk.CTk):
 
         self.speed_entry = ctk.CTkEntry(
             self.controls_frame,
-            placeholder_text="Velocidad cm/s",
+            placeholder_text="Velocidad cm/s (ej: 7.5)",
             fg_color=self.palette["surface"],
             border_color="#9fb2c7",
             font=self.font_body,
@@ -341,11 +365,15 @@ class ScadaApp(ctk.CTk):
             messagebox.showerror("Error", "Ingresa una velocidad valida en cm/s")
             return
 
-        command = f"V{speed:g}"
+        speed_d10 = int(round(speed * 10.0))
+        if speed_d10 > self.max_speed_d10:
+            speed_d10 = self.max_speed_d10
+
+        command = f"V{speed_d10}"
         try:
             self.serial_worker.send(command)
-            self._update_speed(speed)
-            self.log_event(f"Cinta iniciada a {speed:.2f} cm/s")
+            self._update_speed(speed_d10 / 10.0)
+            self.log_event(f"Cinta iniciada a {speed_d10 / 10.0:.1f} cm/s (cmd {command})")
         except SerialException as exc:
             messagebox.showerror("Error serial", str(exc))
 
@@ -382,9 +410,10 @@ class ScadaApp(ctk.CTk):
         if message.startswith("VEL:"):
             value = message.split(":", maxsplit=1)[1].strip()
             try:
-                speed = float(value)
+                speed_d10 = int(value)
+                speed = speed_d10 / 10.0
                 self._update_speed(speed)
-                self.log_event(f"Velocidad reportada: {speed:.2f} cm/s")
+                self.log_event(f"Velocidad reportada: {speed:.1f} cm/s")
             except ValueError:
                 self.log_event(f"Trama VEL invalida: {message}")
             return

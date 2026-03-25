@@ -6,7 +6,7 @@ Interfaz SCADA en Python para supervisar y controlar una cinta transportadora in
 
 - Control de movimiento:
   - Boton `Avanzar` con velocidad configurable en cm/s.
-  - Envio de comando al MSP430 con formato `V<valor>`.
+  - Envio de comando al MSP430 con formato `V<valor_d10>` (decimas de cm/s).
   - Boton `Parada de Emergencia` con envio inmediato del comando `S`.
 - Visualizacion de estado:
   - LED virtual de sensor:
@@ -27,6 +27,7 @@ Interfaz SCADA en Python para supervisar y controlar una cinta transportadora in
 - `main.py`: punto de entrada.
 - `scada/ui.py`: interfaz grafica y logica de supervision/control.
 - `scada/serial_worker.py`: gestion de conexion UART y lectura en segundo plano.
+- `scada_config.ini`: configuracion de baudios y protocolo.
 - `requirements.txt`: dependencias Python.
 
 ## Requisitos previos
@@ -65,19 +66,38 @@ Este script crea `.venv` (si no existe), instala dependencias y ejecuta la aplic
 ## Protocolo de comunicacion
 
 - PC -> MSP430 (comandos salientes):
-  - `V<valor>` para establecer velocidad.
+  - `V<valor_d10>` para establecer velocidad en decimas de cm/s.
+  - Ejemplos: `V75` (7.5 cm/s), `V100` (10.0 cm/s).
   - `S` para detener la cinta.
 - MSP430 -> PC (mensajes entrantes, terminados en `\n`):
   - `DET:1` objeto detectado.
   - `DET:0` zona despejada.
-  - Opcional: `VEL:<valor>` para reportar velocidad medida.
+  - `VEL:<valor_d10>` para reportar velocidad en decimas de cm/s.
+  - Ejemplos: `VEL:75`, `VEL:0`.
+
+## Configuracion por archivo INI
+
+La app carga parametros desde `scada_config.ini`:
+
+```ini
+[serial]
+baudrate = 115200
+timeout = 0.2
+
+[protocol]
+max_speed_d10 = 100
+```
+
+- `baudrate`: velocidad UART usada al conectar.
+- `timeout`: timeout de lectura serial.
+- `max_speed_d10`: limite de velocidad en decimas (100 = 10.0 cm/s).
 
 ## Consideraciones de hardware
 
 - Motor DC 24V accionado por puente H L293D.
 - Sensor fotoelectrico GT-442N3 leido por polling en el MSP430.
 - Verificar jumpers RXD/TXD en la placa MSP430 antes de conectar por UART.
-- Baudrate esperado: 9600.
+- Baudrate esperado: 115200.
 
 ## Solucion de problemas
 
