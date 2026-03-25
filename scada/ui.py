@@ -20,16 +20,26 @@ class ScadaApp(ctk.CTk):
 
         ctk.set_appearance_mode("light")
         ctk.set_default_color_theme("blue")
-        self.configure(fg_color="#f2f5f9")
+        self.configure(fg_color="#e9eef2")
+
+        self.font_title = ctk.CTkFont(family="Montserrat", size=25, weight="bold")
+        self.font_subtitle = ctk.CTkFont(family="Montserrat", size=13)
+        self.font_section = ctk.CTkFont(family="Montserrat", size=15, weight="bold")
+        self.font_body = ctk.CTkFont(family="Montserrat", size=13)
+        self.font_mono = ctk.CTkFont(family="Courier New", size=12)
 
         self.palette = {
-            "card": "#ffffff",
-            "accent": "#0f766e",
-            "accent_hover": "#115e59",
+            "card": "#fdfefe",
+            "card_border": "#d3dbe3",
+            "accent": "#0c7a6c",
+            "accent_hover": "#0a6659",
             "danger": "#d32f2f",
             "danger_hover": "#9a1f1f",
-            "ok": "#2e7d32",
-            "muted": "#475569",
+            "ok": "#1f7a3d",
+            "muted": "#526170",
+            "title": "#0f1f2e",
+            "surface": "#f4f7fb",
+            "surface_dark": "#0f172a",
         }
 
         self.serial_worker = SerialWorker(baudrate=9600)
@@ -45,7 +55,7 @@ class ScadaApp(ctk.CTk):
 
     def _build_layout(self) -> None:
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(3, weight=1)
+        self.grid_rowconfigure(4, weight=1)
 
         self.header_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.header_frame.grid(row=0, column=0, sticky="ew", padx=16, pady=(14, 6))
@@ -54,31 +64,57 @@ class ScadaApp(ctk.CTk):
         self.title_label = ctk.CTkLabel(
             self.header_frame,
             text="Centro de Control - Cinta Transportadora",
-            font=ctk.CTkFont(size=24, weight="bold"),
-            text_color="#0f172a",
+            font=self.font_title,
+            text_color=self.palette["title"],
         )
         self.title_label.grid(row=0, column=0, sticky="w")
 
         self.subtitle_label = ctk.CTkLabel(
             self.header_frame,
             text="Monitoreo en tiempo real y control por UART (MSP430)",
-            font=ctk.CTkFont(size=13),
+            font=self.font_subtitle,
             text_color=self.palette["muted"],
         )
         self.subtitle_label.grid(row=1, column=0, sticky="w", pady=(2, 0))
 
-        self.connection_frame = ctk.CTkFrame(self, fg_color=self.palette["card"], corner_radius=14)
+        self.badge_label = ctk.CTkLabel(
+            self.header_frame,
+            text="SCADA LIVE",
+            font=ctk.CTkFont(family="Montserrat", size=11, weight="bold"),
+            text_color="#ecfeff",
+            fg_color="#155e75",
+            corner_radius=10,
+            padx=12,
+            pady=5,
+        )
+        self.badge_label.grid(row=0, column=1, rowspan=2, sticky="e")
+
+        self.connection_frame = ctk.CTkFrame(
+            self,
+            fg_color=self.palette["card"],
+            corner_radius=16,
+            border_width=1,
+            border_color=self.palette["card_border"],
+        )
         self.connection_frame.grid(row=1, column=0, sticky="ew", padx=16, pady=(8, 8))
         self.connection_frame.grid_columnconfigure(1, weight=1)
 
         self.port_label = ctk.CTkLabel(
             self.connection_frame,
             text="Puerto Serial",
-            font=ctk.CTkFont(size=14, weight="bold"),
+            font=self.font_section,
         )
         self.port_label.grid(row=0, column=0, padx=(12, 8), pady=12)
 
-        self.port_combobox = ctk.CTkComboBox(self.connection_frame, values=["No ports"])
+        self.port_combobox = ctk.CTkComboBox(
+            self.connection_frame,
+            values=["No ports"],
+            border_color="#9fb2c7",
+            button_color="#2f4f6d",
+            button_hover_color="#253f58",
+            dropdown_font=self.font_body,
+            font=self.font_body,
+        )
         self.port_combobox.grid(row=0, column=1, sticky="ew", padx=8, pady=12)
 
         self.refresh_button = ctk.CTkButton(
@@ -88,6 +124,8 @@ class ScadaApp(ctk.CTk):
             command=self.refresh_ports,
             fg_color=self.palette["accent"],
             hover_color=self.palette["accent_hover"],
+            font=self.font_body,
+            corner_radius=10,
         )
         self.refresh_button.grid(row=0, column=2, padx=8, pady=12)
 
@@ -98,6 +136,8 @@ class ScadaApp(ctk.CTk):
             command=self.toggle_connection,
             fg_color="#2563eb",
             hover_color="#1d4ed8",
+            font=self.font_body,
+            corner_radius=10,
         )
         self.connect_button.grid(row=0, column=3, padx=(8, 12), pady=12)
 
@@ -105,16 +145,29 @@ class ScadaApp(ctk.CTk):
             self.connection_frame,
             text="Desconectado",
             text_color="#b22222",
-            font=ctk.CTkFont(size=14, weight="bold"),
+            font=ctk.CTkFont(family="Montserrat", size=14, weight="bold"),
         )
         self.connection_state.grid(row=0, column=4, padx=(8, 12), pady=12)
 
-        self.controls_frame = ctk.CTkFrame(self, fg_color=self.palette["card"], corner_radius=14)
+        self.controls_frame = ctk.CTkFrame(
+            self,
+            fg_color=self.palette["card"],
+            corner_radius=16,
+            border_width=1,
+            border_color=self.palette["card_border"],
+        )
         self.controls_frame.grid(row=2, column=0, sticky="ew", padx=16, pady=8)
         self.controls_frame.grid_columnconfigure(0, weight=1)
         self.controls_frame.grid_columnconfigure(1, weight=0)
 
-        self.speed_entry = ctk.CTkEntry(self.controls_frame, placeholder_text="Velocidad cm/s")
+        self.speed_entry = ctk.CTkEntry(
+            self.controls_frame,
+            placeholder_text="Velocidad cm/s",
+            fg_color=self.palette["surface"],
+            border_color="#9fb2c7",
+            font=self.font_body,
+            corner_radius=10,
+        )
         self.speed_entry.grid(row=0, column=0, sticky="ew", padx=(12, 8), pady=12)
 
         self.forward_button = ctk.CTkButton(
@@ -123,6 +176,8 @@ class ScadaApp(ctk.CTk):
             command=self.send_forward,
             fg_color=self.palette["accent"],
             hover_color=self.palette["accent_hover"],
+            font=self.font_body,
+            corner_radius=10,
         )
         self.forward_button.grid(row=0, column=1, padx=8, pady=12)
 
@@ -132,10 +187,18 @@ class ScadaApp(ctk.CTk):
             fg_color=self.palette["danger"],
             hover_color=self.palette["danger_hover"],
             command=self.send_stop,
+            font=self.font_body,
+            corner_radius=10,
         )
         self.stop_button.grid(row=0, column=2, padx=(8, 12), pady=12)
 
-        self.status_frame = ctk.CTkFrame(self, fg_color=self.palette["card"], corner_radius=14)
+        self.status_frame = ctk.CTkFrame(
+            self,
+            fg_color=self.palette["card"],
+            corner_radius=16,
+            border_width=1,
+            border_color=self.palette["card_border"],
+        )
         self.status_frame.grid(row=3, column=0, sticky="nsew", padx=16, pady=8)
         self.status_frame.grid_columnconfigure(1, weight=1)
         self.status_frame.grid_rowconfigure(2, weight=1)
@@ -143,27 +206,28 @@ class ScadaApp(ctk.CTk):
         self.sensor_title = ctk.CTkLabel(
             self.status_frame,
             text="Estado Sensor GT-442N3",
-            font=ctk.CTkFont(size=15, weight="bold"),
+            font=self.font_section,
         )
         self.sensor_title.grid(row=0, column=0, padx=12, pady=(12, 6), sticky="w")
 
-        self.sensor_canvas = tk.Canvas(self.status_frame, width=70, height=70, highlightthickness=0)
+        self.sensor_canvas = tk.Canvas(self.status_frame, width=76, height=76, highlightthickness=0)
         self.sensor_canvas.grid(row=1, column=0, padx=16, pady=(0, 12), sticky="n")
         self.sensor_canvas.configure(bg=self.palette["card"])
-        self.led = self.sensor_canvas.create_oval(10, 10, 60, 60, fill="#2e7d32", outline="#1b5e20", width=3)
+        self.sensor_canvas.create_oval(6, 6, 70, 70, fill="#cbd5e1", outline="#94a3b8", width=1)
+        self.led = self.sensor_canvas.create_oval(14, 14, 62, 62, fill="#2e7d32", outline="#1b5e20", width=3)
 
         self.sensor_state_label = ctk.CTkLabel(
             self.status_frame,
             text="Estado: Despejado",
             text_color=self.palette["ok"],
-            font=ctk.CTkFont(size=13, weight="bold"),
+            font=ctk.CTkFont(family="Montserrat", size=13, weight="bold"),
         )
         self.sensor_state_label.grid(row=2, column=0, padx=12, pady=(0, 12), sticky="n")
 
         self.speed_title = ctk.CTkLabel(
             self.status_frame,
             text="Velocidad Cinta",
-            font=ctk.CTkFont(size=15, weight="bold"),
+            font=self.font_section,
         )
         self.speed_title.grid(row=0, column=1, padx=12, pady=(12, 6), sticky="w")
 
@@ -171,17 +235,29 @@ class ScadaApp(ctk.CTk):
             self.status_frame,
             progress_color="#2563eb",
             fg_color="#dbe7ff",
+            corner_radius=12,
+            height=18,
         )
         self.speed_progress.grid(row=1, column=1, sticky="ew", padx=(12, 20), pady=(8, 0))
         self.speed_progress.set(0)
 
-        self.speed_value_label = ctk.CTkLabel(self.status_frame, text="0.0 cm/s")
+        self.speed_value_label = ctk.CTkLabel(self.status_frame, text="0.0 cm/s", font=self.font_body)
         self.speed_value_label.grid(row=2, column=1, padx=12, pady=(6, 12), sticky="w")
 
-        self.speed_percent_label = ctk.CTkLabel(self.status_frame, text="0%")
+        self.speed_percent_label = ctk.CTkLabel(
+            self.status_frame,
+            text="0%",
+            font=ctk.CTkFont(family="Montserrat", size=13, weight="bold"),
+        )
         self.speed_percent_label.grid(row=2, column=1, padx=12, pady=(6, 12), sticky="e")
 
-        self.log_frame = ctk.CTkFrame(self, fg_color=self.palette["card"], corner_radius=14)
+        self.log_frame = ctk.CTkFrame(
+            self,
+            fg_color=self.palette["card"],
+            corner_radius=16,
+            border_width=1,
+            border_color=self.palette["card_border"],
+        )
         self.log_frame.grid(row=4, column=0, sticky="nsew", padx=16, pady=(8, 16))
         self.log_frame.grid_columnconfigure(0, weight=1)
         self.log_frame.grid_rowconfigure(1, weight=1)
@@ -189,7 +265,7 @@ class ScadaApp(ctk.CTk):
         self.log_title = ctk.CTkLabel(
             self.log_frame,
             text="Registro de Eventos",
-            font=ctk.CTkFont(size=15, weight="bold"),
+            font=self.font_section,
         )
         self.log_title.grid(row=0, column=0, sticky="w", padx=12, pady=(12, 8))
 
@@ -200,10 +276,21 @@ class ScadaApp(ctk.CTk):
             fg_color="#64748b",
             hover_color="#475569",
             command=self.clear_log,
+            font=self.font_body,
+            corner_radius=9,
         )
         self.clear_log_button.grid(row=0, column=1, padx=12, pady=(12, 8), sticky="e")
 
-        self.log_box = ctk.CTkTextbox(self.log_frame, wrap="word")
+        self.log_box = ctk.CTkTextbox(
+            self.log_frame,
+            wrap="word",
+            fg_color=self.palette["surface_dark"],
+            text_color="#e2e8f0",
+            border_width=1,
+            border_color="#334155",
+            font=self.font_mono,
+            corner_radius=10,
+        )
         self.log_box.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=12, pady=(0, 12))
         self.log_box.configure(state="disabled")
 

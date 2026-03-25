@@ -1,6 +1,6 @@
 # SCADA Cinta Transportadora (CustomTkinter + MSP430)
 
-Interfaz SCADA en Python para supervisar y controlar una cinta transportadora industrial mediante comunicacion USB-Serial (UART) con un MSP430 a 9600 baudios.
+Interfaz SCADA en Python para supervisar y controlar una cinta transportadora industrial mediante comunicacion USB-Serial (UART) con un MSP430 a 115200 baudios.
 
 ## Funcionalidades
 
@@ -54,6 +54,14 @@ Con el entorno virtual activo:
 python main.py
 ```
 
+En Windows, puedes usar el script automatizado desde la carpeta del proyecto:
+
+```bat
+setup_and_run_windows.bat
+```
+
+Este script crea `.venv` (si no existe), instala dependencias y ejecuta la aplicacion.
+
 ## Protocolo de comunicacion
 
 - PC -> MSP430 (comandos salientes):
@@ -88,7 +96,6 @@ python main.py
 
 1. Copia la carpeta del proyecto.
 2. Instala Python 3.10+.
-3. Crea y activa `venv`.
-4. Instala dependencias con `pip install -r requirements.txt`.
-5. Ejecuta `python main.py`.
-6. Conecta el MSP430 y selecciona el puerto en la interfaz.
+3. En Windows: haz doble clic en `setup_and_run_windows.bat`.
+4. Espera a que termine la instalacion y se abra la interfaz.
+5. Conecta el MSP430 y selecciona el puerto en la interfaz.
