@@ -1,83 +1,135 @@
-# SCADA Cinta Transportadora (CustomTkinter + MSP430)
+# SCADA Cinta Transportadora (Python + CustomTkinter)
 
-Interfaz SCADA en Python para supervisar y controlar una cinta transportadora industrial mediante comunicacion USB-Serial (UART) con un MSP430 a 115200 baudios.
+Interfaz SCADA para supervisar y controlar una cinta transportadora con MSP430 por UART (USB-Serial).
 
-## Funcionalidades
+La aplicacion esta escrita en Python y usa:
 
-- Control de movimiento:
-  - Boton `Avanzar` con velocidad configurable en cm/s.
-  - Envio de comando al MSP430 con formato `V<valor_d10>` (decimas de cm/s).
-  - Boton `Parada de Emergencia` con envio inmediato del comando `S`.
-- Visualizacion de estado:
-  - LED virtual de sensor:
-    - Rojo para `DET:1` (objeto detectado).
-    - Verde para `DET:0` (despejado).
-  - Barra de progreso y etiqueta numerica para velocidad actual de cinta.
-- Registro de datos:
-  - Caja de log con marcas de tiempo para eventos y tramas recibidas.
-- Conectividad:
-  - Selector de puerto serial.
-  - Boton `Actualizar` para refrescar puertos.
-  - Boton `Conectar/Desconectar`.
-- Comunicacion no bloqueante:
-  - Lectura serial en hilo dedicado (`threading`) para no congelar la interfaz.
+- `customtkinter` para la interfaz.
+- `pyserial` para comunicacion serie no bloqueante.
+
+## Estado actual del sistema
+
+- UART configurada por defecto a **115200 baudios**.
+- Lectura serie en segundo plano con hilo dedicado (la interfaz no se bloquea).
+- Entrada de velocidad en **cm/s** en la UI, pero envio al firmware en **decimas de cm/s**.
+
+Ejemplo:
+
+- Si escribes `7.5` en la UI, se envia `V75`.
+
+## Funcionalidades de la interfaz
+
+- Seleccion de puerto serial y boton de `Conectar/Desconectar`.
+- Boton `Actualizar` para refrescar puertos.
+- Boton `Avanzar` con velocidad ingresada por el usuario.
+- Boton `Parada de Emergencia` (envia `S`).
+- LED virtual de sensor:
+  - Rojo cuando llega `DET:1`.
+  - Verde cuando llega `DET:0`.
+- Indicador de velocidad:
+  - valor en cm/s,
+  - porcentaje,
+  - barra de progreso.
+- Registro de eventos con timestamp y boton `Limpiar`.
+
+## Protocolo serial (compatible con tu firmware)
+
+Todos los mensajes son ASCII y terminan en salto de linea `\n`.
+
+### PC -> MSP430
+
+- `V<valor_d10>`
+  - `valor_d10` en decimas de cm/s.
+  - Ejemplos: `V75`, `V100`, `V0`.
+- `S`
+  - Stop inmediato.
+
+### MSP430 -> PC
+
+- `DET:1` objeto detectado.
+- `DET:0` sensor despejado.
+- `VEL:<valor_d10>`
+  - Ejemplos: `VEL:75`, `VEL:0`.
+
+Notas:
+
+- La UI convierte `VEL:75` a `7.5 cm/s` para mostrarlo.
+- Si llega una trama no reconocida, se registra como `RX: ...` en el log.
 
 ## Estructura del proyecto
 
 - `main.py`: punto de entrada.
-- `scada/ui.py`: interfaz grafica y logica de supervision/control.
-- `scada/serial_worker.py`: gestion de conexion UART y lectura en segundo plano.
-- `scada_config.ini`: configuracion de baudios y protocolo.
+- `scada/ui.py`: interfaz y logica de control.
+- `scada/serial_worker.py`: capa serial con hilo lector.
+- `scada_config.ini`: configuracion editable.
 - `requirements.txt`: dependencias Python.
+- `setup_and_run_windows.bat`: instalacion + ejecucion automatica en Windows.
+
+## Descargar la aplicacion
+
+Puedes hacerlo de dos formas.
+
+### Opcion 1: Descargar ZIP (recomendada para usuarios no tecnicos)
+
+1. Abre el repositorio en GitHub.
+2. Pulsa `Code` -> `Download ZIP`.
+3. Extrae el ZIP en una carpeta local, por ejemplo `C:\SCADA` o `~/SCADA`.
+
+### Opcion 2: Clonar con Git
+
+```bash
+git clone <URL_DEL_REPOSITORIO>
+cd SCADA
+```
 
 ## Requisitos previos
 
 - Python 3.10 o superior.
-- Sistema con acceso al puerto USB-Serial del MSP430.
-- En Linux, permiso para usar puertos seriales (ejemplo: grupo `dialout`).
+- Acceso al puerto USB-Serial del MSP430.
+- En Linux, permisos de usuario sobre puertos serie (por ejemplo grupo `dialout`).
 
-## Crear entorno virtual (venv)
+## Instalacion y ejecucion
 
-En la carpeta del proyecto:
+### Windows (automatico)
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-## Ejecucion
-
-Con el entorno virtual activo:
-
-```bash
-python main.py
-```
-
-En Windows, puedes usar el script automatizado desde la carpeta del proyecto:
+En la carpeta del proyecto, ejecuta:
 
 ```bat
 setup_and_run_windows.bat
 ```
 
-Este script crea `.venv` (si no existe), instala dependencias y ejecuta la aplicacion.
+Ese script realiza automaticamente:
 
-## Protocolo de comunicacion
+1. Detecta Python (`py -3` o `python`).
+2. Crea `.venv` si no existe.
+3. Activa entorno virtual.
+4. Actualiza `pip`.
+5. Instala dependencias.
+6. Inicia `main.py`.
 
-- PC -> MSP430 (comandos salientes):
-  - `V<valor_d10>` para establecer velocidad en decimas de cm/s.
-  - Ejemplos: `V75` (7.5 cm/s), `V100` (10.0 cm/s).
-  - `S` para detener la cinta.
-- MSP430 -> PC (mensajes entrantes, terminados en `\n`):
-  - `DET:1` objeto detectado.
-  - `DET:0` zona despejada.
-  - `VEL:<valor_d10>` para reportar velocidad en decimas de cm/s.
-  - Ejemplos: `VEL:75`, `VEL:0`.
+### Windows (manual)
 
-## Configuracion por archivo INI
+```bat
+py -3 -m venv .venv
+.venv\Scripts\activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python main.py
+```
 
-La app carga parametros desde `scada_config.ini`:
+### Linux
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python main.py
+```
+
+## Configuracion (`scada_config.ini`)
+
+Archivo actual:
 
 ```ini
 [serial]
@@ -85,37 +137,52 @@ baudrate = 115200
 timeout = 0.2
 
 [protocol]
+# Velocidad maxima en decimas de cm/s (100 => 10.0 cm/s)
 max_speed_d10 = 100
 ```
 
-- `baudrate`: velocidad UART usada al conectar.
-- `timeout`: timeout de lectura serial.
-- `max_speed_d10`: limite de velocidad en decimas (100 = 10.0 cm/s).
+Significado:
 
-## Consideraciones de hardware
+- `baudrate`: velocidad UART.
+- `timeout`: timeout de lectura serial (segundos).
+- `max_speed_d10`: limite maximo de velocidad en decimas de cm/s.
 
-- Motor DC 24V accionado por puente H L293D.
-- Sensor fotoelectrico GT-442N3 leido por polling en el MSP430.
-- Verificar jumpers RXD/TXD en la placa MSP430 antes de conectar por UART.
-- Baudrate esperado: 115200.
+## Uso rapido
+
+1. Conecta el MSP430 por USB.
+2. Abre la app.
+3. Pulsa `Actualizar` y selecciona el puerto.
+4. Pulsa `Conectar`.
+5. Ingresa velocidad en cm/s (ejemplo `7.5`) y pulsa `Avanzar`.
+6. Usa `Parada de Emergencia` para detener.
 
 ## Solucion de problemas
 
-- Si no aparece el puerto serial:
-  - Presiona `Actualizar`.
-  - Verifica cable USB y drivers del adaptador USB-Serial.
-  - Revisa permisos de usuario para puertos seriales.
-- Si no conecta:
-  - Comprueba que otra aplicacion no este usando el mismo puerto.
-  - Revisa que el MSP430 este configurado a 115200 baudios.
-  - Confirma jumpers RXD/TXD correctos.
-- Si no llegan eventos `DET`:
-  - Verifica firmware del MSP430 y formato de tramas con `\n` al final.
+### Error: acceso denegado al puerto (PermissionError 13 en Windows)
 
-## Preparar en otro ordenador
+Suele indicar que otro programa tiene el puerto abierto.
 
-1. Copia la carpeta del proyecto.
-2. Instala Python 3.10+.
-3. En Windows: haz doble clic en `setup_and_run_windows.bat`.
-4. Espera a que termine la instalacion y se abra la interfaz.
-5. Conecta el MSP430 y selecciona el puerto en la interfaz.
+- Cierra Arduino IDE, monitores serie, PuTTY, TeraTerm, etc.
+- Desconecta y reconecta el USB.
+- Verifica el COM correcto en Administrador de dispositivos.
+- Ejecuta la app una vez como administrador.
+
+### En Linux no veo el puerto
+
+Lista puertos detectados:
+
+```bash
+ls /dev/ttyS* /dev/ttyUSB* /dev/ttyACM* 2>/dev/null
+```
+
+Ver procesos usando puertos serie:
+
+```bash
+sudo lsof | grep -E "/dev/tty(USB|ACM|S)"
+```
+
+### No llegan mensajes del sensor
+
+- Revisa jumpers RXD/TXD del MSP430.
+- Verifica que el firmware envia lineas terminadas en `\n`.
+- Comprueba que ambos lados usan el mismo baudrate (actualmente 115200).
